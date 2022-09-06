@@ -1,0 +1,61 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "micromamba-install-locked-pip-dependencies"
+description = 'Install pip dependencies from new-style lockfiles'
+readme = "README.md"
+requires-python = ">=3.6"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Ben Mares", email = "services-micromamba-install-locked-pip-dependencies@tensorial.com" },
+]
+classifiers = [
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.6",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = []
+dynamic = ["version"]
+
+[project.urls]
+Documentation = "https://github.com/maresb/micromamba-install-locked-pip-dependencies#readme"
+Issues = "https://github.com/maresb/micromamba-install-locked-pip-dependencies/issues"
+Source = "https://github.com/maresb/micromamba-install-locked-pip-dependencies"
+
+[project.scripts]
+micromamba-install-locked-pip-dependencies = "micromamba_install_locked_pip_dependencies.cli:main"
+
+[tool.hatch.version]
+path = "micromamba_install_locked_pip_dependencies/__init__.py"
+
+[tool.hatch.envs.default]
+dependencies = [
+  "pytest",
+  "pytest-cov",
+]
+[tool.hatch.envs.default.scripts]
+cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=micromamba_install_locked_pip_dependencies --cov=tests"
+no-cov = "cov --no-cov"
+
+[[tool.hatch.envs.test.matrix]]
+python = ["36", "37", "38", "39", "310", "311"]
+
+[tool.coverage.run]
+branch = true
+parallel = true
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
