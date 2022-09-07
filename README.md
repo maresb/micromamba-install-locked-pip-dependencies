@@ -63,7 +63,7 @@ pip install micromamba-install-locked-pip-dependencies
 ## Without installation
 
 ```console
-curl https://github.com/maresb/micromamba-install-locked-pip-dependencies/blob/main/micromamba_install_locked_pip_dependencies/cli.py | python - --help
+curl https://raw.githubusercontent.com/maresb/micromamba-install-locked-pip-dependencies/master/micromamba_install_locked_pip_dependencies/cli.py | python - --help
 ```
 
 ## License
