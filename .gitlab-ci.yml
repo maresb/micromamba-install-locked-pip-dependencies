@@ -1,0 +1,26 @@
+tagging:
+  only:
+    - main
+    - dev
+  script:
+    # -n  Don't print unless explicitly commanded
+    # s/  Search and replace
+    # ^\s*version\s*=\s*\"  Matches a line starting with, e.g. `  version=  "`
+    # \([[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\)  Captures `123.4.56` as `\1`
+    # \"\s*$  Matches a line ending with, e.g. `"  `
+    # /\1/  Replaces everything with just the captured group
+    # p  Print the result
+    - curl -sSLf "https://github.com/TomWright/dasel/releases/download/v1.26.1/dasel_linux_amd64" -L -o /tmp/dasel && chmod +x /tmp/dasel
+    - version_path="$(/tmp/dasel select -f pyproject.toml -m "tool.hatch.version.path")"
+    - version=$(sed -n "s/^\s*__version__\s*=\s*\"\([[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\)\"\s*$/\1/p" "${version_path}")
+    - git config --global user.name "Ben Mares"
+    - git config --global user.email "services-git-throwaway1@tensorial.com"
+    - tag="v${version}"
+    - |
+      if [ $(git tag -l "${tag}") ]; then
+        echo "Tag ${tag} already exists"
+      else
+        echo "Tagging ${tag}"
+        git tag "${tag}"
+        git push --tags "http://tagger:${ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+      fi
