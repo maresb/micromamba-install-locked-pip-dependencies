@@ -15,7 +15,9 @@ def main():
         category = ["main"]
     else:
         category = args.category
-    packages: Dict[str, Dict[str, str]] = parse_yaml(args.lockfile.read_text())
+    packages: Dict[str, Dict[str, str]] = parse_yaml(
+        args.lockfile.read_text(), args.platform
+    )
     pip_packages = {
         package_name: package
         for package_name, package in packages.items()
@@ -104,11 +106,17 @@ def parse_args() -> argparse.Namespace:
         default=Path("pip"),
         type=Path,
     )
+    parser.add_argument(
+        "--platform",
+        help="",
+        default=None,
+        type=str,
+    )
     args = parser.parse_args()
     return args
 
 
-def parse_yaml(s: str) -> Dict[str, Dict[str, str]]:
+def parse_yaml(s: str, specified_platform: Optional[str]) -> Dict[str, Dict[str, str]]:
     """Crudely parse a YAML file into a packages dict.
 
     Finds the top-level "packages" entry.
@@ -117,7 +125,11 @@ def parse_yaml(s: str) -> Dict[str, Dict[str, str]]:
     The value is a dict of key-value pairs from the YAML where the key and value
     appear on the same line.
     """
-    packages = {}
+    packages: Dict[str, Dict[str, str]] = {}
+    observed_platforms = set()
+    active_platform = specified_platform
+    if specified_platform is not None:
+        observed_platforms.add(specified_platform)
     current_package: Optional[Dict[str, str]] = None
     encountered_package_header = False
     package_list_indentation = None
@@ -148,7 +160,9 @@ def parse_yaml(s: str) -> Dict[str, Dict[str, str]]:
         if line2[0] == "-":
             # We are at the beginning of a new package entry.
             if current_package is not None:
-                packages[current_package["name"]] = current_package
+                _add_package_to_package_dict(
+                    packages, current_package, line_no, active_platform
+                )
             current_package = {}
             line2 = " " + line2[1:]
             package_indentation = len(line2) - len(line2.lstrip())
@@ -185,18 +199,37 @@ def parse_yaml(s: str) -> Dict[str, Dict[str, str]]:
             raise ValueError(f"Empty key in line {line_no}: {line}")
         if value != "":
             current_package[key] = value
+        if key == "platform":
+            observed_platforms.add(value)
+            if active_platform is None:
+                active_platform = value
+            if specified_platform is None and len(observed_platforms) > 1:
+                raise ValueError(
+                    f"Multiple platforms found in lockfile: {observed_platforms}. "
+                    f"Please specify one with --platform."
+                )
+
     if current_package is not None:
-        _add_package_to_package_dict(packages, current_package, line_no)
+        _add_package_to_package_dict(
+            packages, current_package, line_no, active_platform
+        )
     return packages
 
 
-def _add_package_to_package_dict(packages: dict, current_package: dict, line_no: int):
+def _add_package_to_package_dict(
+    packages: dict, current_package: dict, line_no: int, active_platform: Optional[str]
+):
     if "name" not in current_package:
         raise ValueError(f"Package at line {line_no} has no name")
+    if "platform" not in current_package:
+        raise ValueError(f"Package at line {line_no} has no platform")
+    if active_platform is None:
+        raise RuntimeError(f"platform is None while processing line {line_no}")
     name = current_package["name"]
-    if name in packages:
-        raise ValueError(f"Duplicate package {name!r} at line {line_no!r}")
-    packages[name] = current_package
+    if current_package["platform"] == active_platform:
+        if name in packages:
+            raise ValueError(f"Duplicate package {name!r} at line {line_no!r}")
+        packages[name] = current_package
 
 
 if __name__ == "__main__":
