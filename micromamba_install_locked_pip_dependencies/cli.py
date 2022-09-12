@@ -108,7 +108,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--platform",
-        help="",
+        help="Override the detected installation platform",
         default=None,
         type=str,
     )
