@@ -125,11 +125,26 @@ def parse_yaml(s: str, specified_platform: Optional[str]) -> Dict[str, Dict[str,
     The value is a dict of key-value pairs from the YAML where the key and value
     appear on the same line.
     """
-    packages: Dict[str, Dict[str, str]] = {}
-    observed_platforms = set()
-    active_platform = specified_platform
+    try:
+        computed_platform = get_platform_prefix()
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        if specified_platform is None:
+            raise ValueError(
+                "Could not determine platform (perhaps because Windows isn't "
+                "supported?). One must be specified manually with --platform."
+            )
+        computed_platform = specified_platform
     if specified_platform is not None:
-        observed_platforms.add(specified_platform)
+        if computed_platform != specified_platform:
+            print(
+                f"Warning: Specified platform {specified_platform} does not match "
+                f"computed platform {computed_platform}."
+            )
+        active_platform = specified_platform
+    else:
+        active_platform = computed_platform
+    packages: Dict[str, Dict[str, str]] = {}
     current_package: Optional[Dict[str, str]] = None
     encountered_package_header = False
     package_list_indentation = None
@@ -199,15 +214,6 @@ def parse_yaml(s: str, specified_platform: Optional[str]) -> Dict[str, Dict[str,
             raise ValueError(f"Empty key in line {line_no}: {line}")
         if value != "":
             current_package[key] = value
-        if key == "platform":
-            observed_platforms.add(value)
-            if active_platform is None:
-                active_platform = value
-            if specified_platform is None and len(observed_platforms) > 1:
-                raise ValueError(
-                    f"Multiple platforms found in lockfile: {observed_platforms}. "
-                    f"Please specify one with --platform."
-                )
 
     if current_package is not None:
         _add_package_to_package_dict(
@@ -223,13 +229,30 @@ def _add_package_to_package_dict(
         raise ValueError(f"Package at line {line_no} has no name")
     if "platform" not in current_package:
         raise ValueError(f"Package at line {line_no} has no platform")
-    if active_platform is None:
-        raise RuntimeError(f"platform is None while processing line {line_no}")
     name = current_package["name"]
     if current_package["platform"] == active_platform:
         if name in packages:
             raise ValueError(f"Duplicate package {name!r} at line {line_no!r}")
         packages[name] = current_package
+
+
+def get_platform_prefix():
+    """Following the logic of <https://micro.mamba.pm/install.sh>"""
+    # Execute uname -m to get the architecture
+    arch = subprocess.check_output(["uname", "-m"]).decode().strip()
+    os = subprocess.check_output(["uname"]).decode().strip()
+    if os == "Linux":
+        platform = "linux"
+        if arch not in ["aarch64", "ppc64le"]:
+            arch = "64"
+    elif os == "Darwin":
+        platform = "osx"
+        if arch not in ["arm64"]:
+            arch = "64"
+    else:
+        raise ValueError(f"Unsupported platform: {os}")
+    prefix = f"{platform}-{arch}"
+    return prefix
 
 
 if __name__ == "__main__":
