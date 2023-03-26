@@ -1,4 +1,6 @@
-# micromamba-install-locked-pip-dependencies
+# USE MICROMAMBA >=0.26.0
+
+## This project is no longer relevant. Please instead use an up-to-date version of Micromamba.
 
 [![PyPI - Version](https://img.shields.io/pypi/v/micromamba-install-locked-pip-dependencies.svg)](https://pypi.org/project/micromamba-install-locked-pip-dependencies)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/micromamba-install-locked-pip-dependencies.svg)](https://pypi.org/project/micromamba-install-locked-pip-dependencies)
@@ -23,7 +25,7 @@
 
 ## Introduction
 
-Micromamba currently [ignores](https://github.com/mamba-org/mamba/issues/1900) pip dependencies in new-style lockfiles. This script parses the lockfile and installs those dependencies.
+~Micromamba currently [ignores](https://github.com/mamba-org/mamba/issues/1900) pip dependencies in new-style lockfiles.~ This script parses the lockfile and installs those dependencies.
 
 This script has no dependencies other than Python 3.6+. (It implements its own crude YAML parser.)
 
